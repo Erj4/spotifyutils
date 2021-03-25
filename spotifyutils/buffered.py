@@ -19,7 +19,6 @@ class BufferedFunction():
             self.flush()
 
     def flush(self):
-        print(f"Flushing {len(self._items)} items")
         self.func(self._items)
         self._items = []
 

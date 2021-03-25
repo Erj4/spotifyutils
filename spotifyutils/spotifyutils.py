@@ -76,17 +76,18 @@ def like_playlist(spotify, playlist_id, interactive):
     )
 
     with buffered_save_track:
-        for song in auto_paginate(spotify, songs_result):
-            track = song["track"]
+        with click.progressbar(auto_paginate(spotify, songs_result)) as songs:
+            for song in songs:
+                track = song["track"]
 
-            prompt_text = "Title:\t{title}\nArtist:\t{artist}\nAlbum:\t{album}".format(
-                title=track["name"],
-                artist=", ".join(
-                    map(lambda artist: artist["name"], track["artists"])),
-                album=track["album"]["name"]
-            )
-            click.secho(prompt_text, fg='green', err=True)
+                if interactive:
+                    prompt_text = "Title:\t{title}\nArtist:\t{artist}\nAlbum:\t{album}".format(
+                        title=track["name"],
+                        artist=", ".join(
+                            map(lambda artist: artist["name"], track["artists"])),
+                        album=track["album"]["name"]
+                    )
+                    click.secho(prompt_text, fg='green', err=True)
 
-            if not interactive or click.confirm("Add to library?", default=True, err=True):
-                buffered_save_track(track["id"])
-            click.echo()
+                if not interactive or click.confirm("Add to library?", default=True, err=True):
+                    buffered_save_track(track["id"])
