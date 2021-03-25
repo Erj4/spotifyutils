@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="spotifyutils",
-    version="0.1",
+    version="0.2",
     py_modules="spotifyutils",
     packages=find_packages("."),
     #package_dir={"": "."},

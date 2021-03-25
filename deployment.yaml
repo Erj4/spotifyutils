@@ -16,7 +16,7 @@ spec:
         spec:
           containers:
             - name: spotifyutils
-              image: xor110/spotifyutils:v0.1
+              image: xor110/spotifyutils:v0.2
               command:
                 - spotifyutils
                 - like-playlist
