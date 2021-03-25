@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: spotify-utils
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: like-playlist
+  namespace: spotify-utils
+spec:
+  schedule: "@daily"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: spotifyutils
+              image: xor110/spotifyutils:v0.1
+              command:
+                - spotifyutils
+                - like-playlist
+              args:
+                - --playlist=$(date +%Y)
+              volumeMounts:
+                - mountPath: /spotifyutils
+                  name: credentials
+          volumes:
+            - name: credentials
+              secret:
+                secretName: spotify-credentials
+          restartPolicy: OnFailure
