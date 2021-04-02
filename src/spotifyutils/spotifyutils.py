@@ -53,8 +53,8 @@ def cli(ctx, cred_file, callback_url, discord_user_id):
     ctx.obj = get_connection(
         credentials["spotify"]["id"],
         credentials["spotify"]["secret"],
-        callback_url,
-        send_auth_request
+        send_auth_request,
+        callback_url
     )
 
 
