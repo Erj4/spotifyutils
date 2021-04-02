@@ -33,7 +33,7 @@ spec:
         spec:
           containers:
             - name: spotifyutils
-              image: xor110/spotifyutils:v0.3
+              image: xor110/spotifyutils:v0.3-buster
               command:
                 - sh
                 - -c
