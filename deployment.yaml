@@ -27,20 +27,26 @@ spec:
   jobTemplate:
     spec:
       template:
+        metadata:
+          labels:
+            spotify-utils-auth: expose
         spec:
           containers:
             - name: spotifyutils
-              image: xor110/spotifyutils:v0.2
+              image: xor110/spotifyutils:v0.3
               command:
                 - sh
                 - -c
               args:
-                - spotifyutils like-playlist --playlist=$(date +%Y)
+                - spotifyutils --discord-user 206788464472096769 --url https://spotify-utils.is.erj4.uk/callback like-playlist --playlist=$(date +%Y)
               volumeMounts:
                 - mountPath: /spotifyutils
                   name: credentials
                 - mountPath: /spotifyutils/.cache
                   name: auth-cache
+              ports:
+                - containerPort: 30001
+                  name: http
           volumes:
             - name: credentials
               secret:
@@ -49,3 +55,34 @@ spec:
               persistentVolumeClaim:
                 claimName: spotify-auth-cache
           restartPolicy: OnFailure
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spotify-utils-auth
+  namespace: spotify-utils
+spec:
+  selector:
+    spotify-utils-auth: expose
+  ports:
+    - name: http
+      port: 80
+      targetPort: 30001
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: spotify-utils
+  namespace: spotify-utils
+spec:
+  rules:
+    - host: spotify-utils.is.erj4.uk
+      http:
+        paths:
+          - pathType: Prefix
+            path: "/callback"
+            backend:
+              service:
+                name: spotify-utils-auth
+                port:
+                  name: http
