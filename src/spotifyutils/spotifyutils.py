@@ -1,4 +1,6 @@
+import asyncio
 import click
+import discord
 import yaml
 
 from spotifyutils.buffered import auto_paginate, BufferedFunction
@@ -6,21 +8,54 @@ from spotifyutils.connection import get_connection
 
 
 @click.group()
-@click.option("--cred-file", "--credentials-file", default="credentials.yaml")
+@click.option("--cred-file", "--credentials-file", "-c", default="credentials.yaml")
+@click.option("--callback-url", "--url", default="http://localhost:30001")
+@click.option("--discord-user-id", "--discord-user", required=False)
 @click.pass_context
-def cli(ctx, cred_file):
+def cli(ctx, cred_file, callback_url, discord_user_id):
     with click.open_file(cred_file) as f:
         credentials = yaml.safe_load(f)
 
-    if "id" not in credentials:
+    if "spotify" not in credentials:
         raise click.exceptions.ClickException(
-            f"'id' missing from credential file '{cred_file}'")
+            f"Spotify credentials missing from credential file '{cred_file}'")
 
-    if "secret" not in credentials:
+    if "id" not in credentials["spotify"]:
         raise click.exceptions.ClickException(
-            f"'secret' missing from credential file '{cred_file}'")
+            f"Spotify id missing from credential file '{cred_file}'")
 
-    ctx.obj = get_connection(credentials["id"], credentials["secret"])
+    if "secret" not in credentials["spotify"]:
+        raise click.exceptions.ClickException(
+            f"Spotify secret missing from credential file '{cred_file}'")
+
+    async def discord_send_auth_request(credentials, user_id, url):
+        if "discord" not in credentials:
+            raise click.exceptions.ClickException(
+                f"Discord credentials missing from credential file '{cred_file}'")
+        if "token" not in credentials["discord"]:
+            raise click.exceptions.ClickException(
+                f"Discord token missing from credential file '{cred_file}'")
+
+        client = discord.Client()
+        try:
+            await client.login(credentials["discord"]["token"])
+            user = await client.fetch_user(user_id)
+            await user.send(f"Spotify utils needs you to authorise:\n{url}")
+        finally:
+            if not client.is_closed():
+                await client.close()
+
+    def send_auth_request(url):
+        if discord_user_id is not None:
+            asyncio.run(discord_send_auth_request(
+                credentials, discord_user_id, url))
+
+    ctx.obj = get_connection(
+        credentials["spotify"]["id"],
+        credentials["spotify"]["secret"],
+        callback_url,
+        send_auth_request
+    )
 
 
 def get_user_playlist_id(spotify, name):

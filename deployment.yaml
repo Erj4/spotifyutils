@@ -3,12 +3,26 @@ kind: Namespace
 metadata:
   name: spotify-utils
 ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: spotify-auth-cache
+  namespace: spotify-utils
+spec:
+  resources:
+    requests:
+      storage: 10Ki
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+---
 apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
   name: like-playlist
   namespace: spotify-utils
 spec:
+  concurrencyPolicy: Replace
   schedule: "@daily"
   jobTemplate:
     spec:
@@ -18,15 +32,20 @@ spec:
             - name: spotifyutils
               image: xor110/spotifyutils:v0.2
               command:
-                - spotifyutils
-                - like-playlist
+                - sh
+                - -c
               args:
-                - --playlist=$(date +%Y)
+                - spotifyutils like-playlist --playlist=$(date +%Y)
               volumeMounts:
                 - mountPath: /spotifyutils
                   name: credentials
+                - mountPath: /spotifyutils/.cache
+                  name: auth-cache
           volumes:
             - name: credentials
               secret:
                 secretName: spotify-credentials
+            - name: auth-cache
+              persistentVolumeClaim:
+                claimName: spotify-auth-cache
           restartPolicy: OnFailure
